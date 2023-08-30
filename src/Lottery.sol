@@ -9,21 +9,30 @@ pragma solidity ^0.8.18;
  * @dev implements chainlink VRF V2 and chainlink automation
  */
 contract Lottery {
-    //1. types
+    //errors
+    error Lottery__notEnoughEth__error();
+    //types
 
-    //2. state variables
+    //state variables
     uint256 private i_ticketPrice;
+    address payable[] private s_players;
 
-    //3. events
+    //events
 
-    //4.modifiers
+    //modifiers
 
     //functions
+
     constructor(uint256 _ticketPrice) {
         i_ticketPrice = _ticketPrice;
     }
 
-    function buyTicket() public payable {}
+    function buyTicket() external payable {
+        if (msg.value < i_ticketPrice) {
+            revert Lottery__notEnoughEth__error();
+        }
+        s_players.push(payable(msg.sender));
+    }
 
     function pickWinner() public {}
 
