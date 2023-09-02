@@ -2,7 +2,7 @@
 
 push:
 	git add .
-	git commit -m "$(MSG)"
+	git commit -m "added fulfill random words method"
 	git push origin master
 
 

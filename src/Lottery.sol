@@ -1,15 +1,16 @@
 //SPDX-License-Indentifier:MIT
 pragma solidity ^0.8.18;
 
-import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
+import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
+import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import {ConfirmedOwner} from "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
 
 /**
  * @title A simple lottery contract
  * @author Stefania
- * @notice
  * @dev implements chainlink VRF V2 and chainlink automation
  */
-contract Lottery {
+contract Lottery is VRFConsumerBaseV2 {
     /** Layout of contracts: ErTS, EvMF
      * ErTS
      * errors, types, state variables
@@ -32,7 +33,7 @@ contract Lottery {
     uint32 private immutable i_callbackGasLimit;
 
     //2. constants
-    uint256 private REQUEST_CONFIRMATIONS = 2;
+    uint16 private REQUEST_CONFIRMATIONS = 2;
     uint32 private NUM_WORDS = 1;
 
     event Lottery__playerAccepted__event(address indexed player);
@@ -40,15 +41,15 @@ contract Lottery {
     constructor(
         uint256 _ticketPrice,
         uint256 _lotteryDuration,
-        VRFCoordinatorV2Interface _VRFCoordinator,
+        address _VRFCoordinator,
         bytes32 _gasLane,
         uint64 _subscriptionId,
         uint32 _callbackGasLimit
-    ) {
+    ) VRFConsumerBaseV2(_VRFCoordinator) {
         i_ticketPrice = _ticketPrice;
         i_lotteryDuration = _lotteryDuration;
         s_lastTimestampSnapshot = block.timestamp;
-        i_VRFCoordinator = _VRFCoordinator;
+        i_VRFCoordinator = VRFCoordinatorV2Interface(_VRFCoordinator);
         i_gasLane = _gasLane;
         i_subscriptionId = _subscriptionId;
         i_callbackGasLimit = _callbackGasLimit;
@@ -74,6 +75,14 @@ contract Lottery {
             NUM_WORDS
         );
     }
+
+    /**
+     * @dev Chainlink node will call this function to give back the randomWords
+     */
+    function fulfillRandomWords(
+        uint256 requestId,
+        uint256[] memory randomWords
+    ) internal override {}
 
     // Getters
     function getTicketPrice() public returns (uint256) {
