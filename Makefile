@@ -2,7 +2,7 @@
 
 push:
 	git add .
-	git commit -m "added fulfill random words method"
+	git commit -m "pick up a random winner, send contract full balance, reset lottery"
 	git push origin master
 
 

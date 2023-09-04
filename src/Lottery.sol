@@ -9,34 +9,35 @@ import {ConfirmedOwner} from "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
  * @title A simple lottery contract
  * @author Stefania
  * @dev implements chainlink VRF V2 and chainlink automation
+ *  Layout of contracts: ErTS, EvMF
+ *      ErTS -> errors, types, state variables
+ *      EvMF -> events, modifiers, functions
  */
 contract Lottery is VRFConsumerBaseV2 {
-    /** Layout of contracts: ErTS, EvMF
-     * ErTS
-     * errors, types, state variables
-     * EvMF
-     * events, modifiers, fucntions
-     */
     error Lottery__notEnoughEth__error();
-    // @dev duration of the lottery
+    error Lottry__TransferToWinnerFailed__error();
+    error Lottery__closedState__error();
+
+    enum LotteryState{OPEN, CLOSE};
+
+    uint16 private REQUEST_CONFIRMATIONS = 2;
+    uint32 private NUM_WORDS = 1;
+
     uint256 private immutable i_lotteryDuration;
     uint256 private immutable i_ticketPrice;
-    address payable[] private s_players;
-    // @dev always a smaller number than block.timestamp
-    uint256 private s_lastTimestampSnapshot;
-
-    //VRF
-    //1. chain dependent vars
     VRFCoordinatorV2Interface private immutable i_VRFCoordinator;
     bytes32 private immutable i_gasLane;
     uint64 private immutable i_subscriptionId;
     uint32 private immutable i_callbackGasLimit;
 
-    //2. constants
-    uint16 private REQUEST_CONFIRMATIONS = 2;
-    uint32 private NUM_WORDS = 1;
+    address payable[] private s_players;
+    uint256 private s_lastTimestampSnapshot;  //always a smaller number than block.timestamp
+    address private s_lastWinner;
+    LotteryState private s_currentLotteryState;
 
-    event Lottery__playerAccepted__event(address indexed player);
+    event Lottery__PlayerAccepted__event(address indexed player);
+    event Lottery__LotteryReset__event();
+    event Lottery__WinnerChosen__event(address indexed winner )
 
     constructor(
         uint256 _ticketPrice,
@@ -53,20 +54,25 @@ contract Lottery is VRFConsumerBaseV2 {
         i_gasLane = _gasLane;
         i_subscriptionId = _subscriptionId;
         i_callbackGasLimit = _callbackGasLimit;
+        s_currentLotteryState = LotteryState.OPEN;
     }
 
     function buyTicket() external payable {
         if (msg.value < i_ticketPrice) {
             revert Lottery__notEnoughEth__error();
         }
+        if (s_currentLotteryState == LotteryState.CLOSE){
+            revert Lottery__closedState__error();
+        }
         s_players.push(payable(msg.sender));
-        emit Lottery__playerAccepted__event(msg.sender);
+        emit Lottery__PlayerAccepted__event(msg.sender);
     }
 
     function pickWinner() public {
         if ((block.timestamp - s_lastTimestampSnapshot) < i_lotteryDuration) {
             revert();
         }
+        s_currentLotteryState = LotteryState.CLOSE;
         uint256 requestId = i_VRFCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
@@ -82,7 +88,19 @@ contract Lottery is VRFConsumerBaseV2 {
     function fulfillRandomWords(
         uint256 requestId,
         uint256[] memory randomWords
-    ) internal override {}
+    ) internal override {
+        uint256 _winnerIndex = randomWords[0] % s_players.length;
+        address payable _winnerAddress = s_players[_winnerIndex];
+        s_lastWinner = _winnerAddress;
+        emit Lottery__WinnerChosen(_winnerAddress);
+        (bool success, ) = _winnerAddress.call{value: address(this).balance}("");
+        if (!success) {
+            revert Lottry__TransferToWinnerFailed__error();
+        }
+        s_currentLotteryState = LotteryState.OPEN;
+        s_players = new address payable[](0);
+        emit Lottery__LotteryReset__event();
+    }
 
     // Getters
     function getTicketPrice() public returns (uint256) {
@@ -91,5 +109,9 @@ contract Lottery is VRFConsumerBaseV2 {
 
     function getLotteryDuration() public returns (uint256) {
         return i_lotteryDuration;
+    }
+
+    function getLastWinner() public returns (address) {
+        return s_lastWinner;
     }
 }
