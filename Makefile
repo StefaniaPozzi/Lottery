@@ -2,7 +2,7 @@
 
 push:
 	git add .
-	git commit -m "fixed CEI on fulfillRandomWords, set upKeeper"
+	git commit -m "checkupkeep checks, performupkeep, started deployment scripts"
 	git push origin master
 
 

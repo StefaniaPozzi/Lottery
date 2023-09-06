@@ -14,10 +14,16 @@ import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
  *      ErTS -> errors, types, state variables
  *      EvMF -> events, modifiers, functions
  */
-contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
-    error Lottery__notEnoughEth__error();
+contract Lottery is VRFConsumerBaseV2 {
+    error Lottery__NotEnoughEth__error();
     error Lottry__TransferToWinnerFailed__error();
-    error Lottery__closedState__error();
+    error Lottery__ClosedState__error();
+    error Lottery__UpkeepNotNeeded__error(
+        uint256 balance,
+        uint256 numPlayers,
+        uint256 timePassed,
+        uint256 lotteryState
+    );
 
     enum LotteryState {
         OPEN,
@@ -63,21 +69,27 @@ contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
 
     function buyTicket() external payable {
         if (msg.value < i_ticketPrice) {
-            revert Lottery__notEnoughEth__error();
+            revert Lottery__NotEnoughEth__error();
         }
         if (s_currentLotteryState == LotteryState.CLOSE) {
-            revert Lottery__closedState__error();
+            revert Lottery__ClosedState__error();
         }
         s_players.push(payable(msg.sender));
         emit Lottery__PlayerAccepted__event(msg.sender);
     }
 
-    function pickWinner() public {
-        if ((block.timestamp - s_lastTimestampSnapshot) < i_lotteryDuration) {
-            revert();
+    function performUpkeep() external {
+        (bool upkeepNeeded, ) = checkUpKeep("");
+        if (!upkeepNeeded) { 
+            revert Lottery__UpkeepNotNeeded__error(
+                address(this).balance,
+                s_players.length,
+                (block.timestamp - s_lastTimestampSnapshot),
+                uint256(s_currentLotteryState)
+            );
         }
         s_currentLotteryState = LotteryState.CLOSE;
-        uint256 requestId = i_VRFCoordinator.requestRandomWords(
+        i_VRFCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
             REQUEST_CONFIRMATIONS,
@@ -114,7 +126,19 @@ contract Lottery is VRFConsumerBaseV2, AutomationCompatibleInterface {
 
     function checkUpKeep(
         bytes memory /*checkdata*/
-    ) public view returns (bool upKeepNeeded, bytes memory /*performData*/) {}
+    ) public view returns (bool upkeepNeeded, bytes memory /*performData*/) {
+        bool lotteryDurationPassed = (block.timestamp -
+            s_lastTimestampSnapshot) >= i_lotteryDuration;
+        bool lotteryHasPlayers = s_players.length > 0;
+        bool lotteryIsInOpenState = s_currentLotteryState == LotteryState.OPEN;
+        bool lotteryHasBalance = address(this).balance > 0; //is this redundant? If there are players there should be money
+        upkeepNeeded = (lotteryDurationPassed &&
+            lotteryHasPlayers &&
+            lotteryIsInOpenState &&
+            lotteryHasBalance);
+
+        // not needed -> return (upkeepNeeded, "0x0");
+    }
 
     // Getters
     function getTicketPrice() public returns (uint256) {
