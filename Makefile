@@ -2,7 +2,7 @@
 
 push:
 	git add .
-	git commit -m "checkupkeep checks, performupkeep, started deployment scripts"
+	git commit -m "added HelperConfig, deployment scripts"
 	git push origin master
 
 

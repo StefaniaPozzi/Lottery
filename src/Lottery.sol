@@ -80,7 +80,7 @@ contract Lottery is VRFConsumerBaseV2 {
 
     function performUpkeep() external {
         (bool upkeepNeeded, ) = checkUpKeep("");
-        if (!upkeepNeeded) { 
+        if (!upkeepNeeded) {
             revert Lottery__UpkeepNotNeeded__error(
                 address(this).balance,
                 s_players.length,
@@ -141,15 +141,19 @@ contract Lottery is VRFConsumerBaseV2 {
     }
 
     // Getters
-    function getTicketPrice() public returns (uint256) {
+    function getTicketPrice() external view returns (uint256) {
         return i_ticketPrice;
     }
 
-    function getLotteryDuration() public returns (uint256) {
+    function getLotteryDuration() external view returns (uint256) {
         return i_lotteryDuration;
     }
 
-    function getLastWinner() public returns (address) {
+    function getLastWinner() external view returns (address) {
         return s_lastWinner;
+    }
+
+    function getLotteryState() external view returns (LotteryState) {
+        return s_currentLotteryState;
     }
 }
