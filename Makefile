@@ -2,7 +2,7 @@
 
 push:
 	git add .
-	git commit -m "added HelperConfig, deployment scripts"
+	git commit -m "test scripts - unit - buyTicket "
 	git push origin master
 
 

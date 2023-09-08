@@ -15,7 +15,7 @@ import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
  *      EvMF -> events, modifiers, functions
  */
 contract Lottery is VRFConsumerBaseV2 {
-    error Lottery__NotEnoughEth__error();
+    error Lottery__EthValueBelowTicketPrice__error();
     error Lottry__TransferToWinnerFailed__error();
     error Lottery__ClosedState__error();
     error Lottery__UpkeepNotNeeded__error(
@@ -69,7 +69,7 @@ contract Lottery is VRFConsumerBaseV2 {
 
     function buyTicket() external payable {
         if (msg.value < i_ticketPrice) {
-            revert Lottery__NotEnoughEth__error();
+            revert Lottery__EthValueBelowTicketPrice__error();
         }
         if (s_currentLotteryState == LotteryState.CLOSE) {
             revert Lottery__ClosedState__error();
@@ -155,5 +155,9 @@ contract Lottery is VRFConsumerBaseV2 {
 
     function getLotteryState() external view returns (LotteryState) {
         return s_currentLotteryState;
+    }
+
+    function getPlayer(uint256 index) external view returns (address) {
+        return s_players[index];
     }
 }
