@@ -18,6 +18,7 @@ contract LotteryTest is Test {
     uint64 subscriptionId;
     uint32 callbackGasLimit;
     address linkToken;
+    uint256 deployerKey;
 
     address public PLAYER = makeAddr("player");
     uint256 public constant STARTING_USER_BALANCE = 10 ether;
@@ -35,7 +36,8 @@ contract LotteryTest is Test {
             gasLane,
             subscriptionId,
             callbackGasLimit,
-            linkToken
+            linkToken,
+            deployerKey
         ) = helperConfig.deploymentNetworkConfig();
         vm.deal(PLAYER, STARTING_USER_BALANCE);
     }

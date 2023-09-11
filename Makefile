@@ -4,7 +4,7 @@ include .env
 
 push:
 	git add .
-	git commit -m "added interactions - create, fund subscription (sepolia + anvil)"
+	git commit -m "added interactions - addConsumer"
 	git push origin master
 
 interaction:
