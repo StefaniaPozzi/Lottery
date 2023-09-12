@@ -1,6 +1,6 @@
 //SPDX-License-Identifier:MIT
 pragma solidity ^0.8.19;
-import {Script} from "forge-std/Script.sol";
+import {Script, console} from "forge-std/Script.sol";
 import {Lottery} from "../src/Lottery.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 import {CreateSubscription, FundSubscription, AddConsumer} from "./Interactions.s.sol";
@@ -23,7 +23,8 @@ contract LotteryDeploy is Script {
         if (subscriptionId == 0) {
             CreateSubscription subscriptionCreator = new CreateSubscription();
             subscriptionId = subscriptionCreator.createSubscription(
-                vrfCoordinator, deployerKey
+                vrfCoordinator,
+                deployerKey
             );
             FundSubscription fundSubscriptor = new FundSubscription();
             fundSubscriptor.fundSubscription(
@@ -33,7 +34,7 @@ contract LotteryDeploy is Script {
                 deployerKey
             );
         }
-        vm.startBroadcast();
+        vm.startBroadcast(deployerKey);
         Lottery lottery = new Lottery(
             entranceFee,
             interval,

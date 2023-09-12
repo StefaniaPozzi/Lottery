@@ -27,7 +27,7 @@ contract HelperConfig is Script {
         }
     }
 
-    function getSepoliaConfig() public  returns (NetworkConfig memory) {
+    function getSepoliaConfig() public returns (NetworkConfig memory) {
         return
             NetworkConfig({
                 entranceFee: 0.01 ether,

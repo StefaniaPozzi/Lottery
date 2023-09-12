@@ -11,6 +11,7 @@ import {Vm} from "forge-std/Vm.sol";
 contract LotteryTest is Test {
     Lottery lottery;
     HelperConfig helperConfig;
+
     uint256 entranceFee;
     uint256 interval;
     address vrfCoordinator;
@@ -29,17 +30,17 @@ contract LotteryTest is Test {
     function setUp() external {
         LotteryDeploy lotteryDeploy = new LotteryDeploy();
         (lottery, helperConfig) = lotteryDeploy.run();
+        vm.deal(PLAYER, STARTING_USER_BALANCE);
         (
             entranceFee,
             interval,
             vrfCoordinator,
             gasLane,
             subscriptionId,
-            callbackGasLimit,
+            ,
             linkToken,
-            deployerKey
+
         ) = helperConfig.deploymentNetworkConfig();
-        vm.deal(PLAYER, STARTING_USER_BALANCE);
     }
 
     function testInitializesInOpenState() public view {
@@ -75,6 +76,6 @@ contract LotteryTest is Test {
         lottery.performUpkeep();
         vm.expectRevert(Lottery.Lottery__ClosedState__error.selector);
         vm.prank(PLAYER);
-        lottery.buyTicket{value: entranceFee}(); //Invalid consumer
+        lottery.buyTicket{value: entranceFee}();
     }
 }

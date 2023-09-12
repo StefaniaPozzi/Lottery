@@ -4,7 +4,7 @@ include .env
 
 push:
 	git add .
-	git commit -m "added interactions - addConsumer"
+	git commit -m "fixed stack too deep error"
 	git push origin master
 
 interaction:
