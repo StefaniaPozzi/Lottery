@@ -3,4 +3,4 @@
 pragma solidity ^0.8.18;
 import {Test} from "forge-std/Test.sol";
 
-contract interactionTest is Test {}
+contract InteractionTest is Test {}

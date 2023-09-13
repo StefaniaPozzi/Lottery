@@ -19,13 +19,11 @@ contract CreateSubscription is Script {
     function createSubscription(
         address vrfCoordinator,
         uint256 deployerKey
-    ) public returns (uint64) {
+    ) public returns (uint64 subId) {
         console.log("Created subscription for chain ", block.chainid);
         vm.startBroadcast(deployerKey);
-        uint64 subId = VRFCoordinatorV2Mock(vrfCoordinator)
-            .createSubscription();
-        console.log(subId);
-        vm.stopBroadcast();
+        subId = VRFCoordinatorV2Mock(vrfCoordinator).createSubscription();
+        vm.stopBroadcast(); //HERE
     }
 
     function run() external returns (uint64) {
@@ -34,7 +32,7 @@ contract CreateSubscription is Script {
 }
 
 contract FundSubscription is Script {
-    uint96 public constant FUND_AMOUNT = 0.01 ether;
+    uint96 public constant FUND_AMOUNT = 10 ether;
 
     function fundSubscription(
         uint64 subscriptionId,
