@@ -4,7 +4,7 @@ include .env
 
 push:
 	git add .
-	git commit -m "fixed test setup error"
+	git commit -m "fixed test fund error, readme project structure, checkUpkeep tests"
 	git push origin master
 
 interaction-sepolia:

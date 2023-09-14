@@ -3,8 +3,7 @@ pragma solidity ^0.8.18;
 
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-import {ConfirmedOwner} from "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
-import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
+import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
 
 /**
  * @title A simple lottery contract
@@ -131,7 +130,7 @@ contract Lottery is VRFConsumerBaseV2 {
             s_lastTimestampSnapshot) >= i_lotteryDuration;
         bool lotteryHasPlayers = s_players.length > 0;
         bool lotteryIsInOpenState = s_currentLotteryState == LotteryState.OPEN;
-        bool lotteryHasBalance = address(this).balance > 0; //is this redundant? If there are players there should be money
+        bool lotteryHasBalance = address(this).balance > 0;
         upkeepNeeded = (lotteryDurationPassed &&
             lotteryHasPlayers &&
             lotteryIsInOpenState &&

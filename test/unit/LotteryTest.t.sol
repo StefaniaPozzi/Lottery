@@ -78,4 +78,30 @@ contract LotteryTest is Test {
         vm.prank(PLAYER);
         lottery.buyTicket{value: entranceFee}();
     }
+
+    //time passed
+    //has players
+    //open state
+    //has balance
+    function testCheckUpkeepFalseIfHasNoBalance() public {
+        vm.warp(block.timestamp + interval + 1);
+        (bool upkeepNeeded, ) = lottery.checkUpKeep("");
+        assert(!upkeepNeeded);
+    }
+
+    function testCheckUpkeepFalseIfEnoughTimeHasntPassed() public {
+        vm.prank(PLAYER);
+        lottery.buyTicket{value: entranceFee}();
+        vm.warp(block.timestamp + interval / 2);
+        (bool upkeepNeeded, ) = lottery.checkUpKeep("");
+        assert(!upkeepNeeded);
+    }
+
+    function testCheckUpkeepAllParamsAreTrue() public {
+        vm.prank(PLAYER);
+        lottery.buyTicket{value: entranceFee}();
+        vm.warp(block.timestamp + interval + 1);
+        (bool upkeepNeeded, ) = lottery.checkUpKeep("");
+        assert(upkeepNeeded);
+    }
 }
