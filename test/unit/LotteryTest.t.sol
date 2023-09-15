@@ -7,6 +7,7 @@ import {Lottery} from "../../src/Lottery.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {Vm} from "forge-std/Vm.sol";
+import {VRFCoordinatorV2Mock} from "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
 
 contract LotteryTest is Test {
     Lottery lottery;
@@ -42,6 +43,24 @@ contract LotteryTest is Test {
 
         ) = helperConfig.deploymentNetworkConfig();
     }
+
+    /**
+     * Test Utils
+     * @dev This util Arranges, Acts, Asserts if:
+     *      1. time passed
+     *      2. has players
+     *      3. open state
+     *      4. has balance
+     *
+     */
+    modifier setAllCheckUpkeepParamsToTrue() {
+        vm.prank(PLAYER);
+        lottery.buyTicket{value: entranceFee}();
+        vm.warp(block.timestamp + interval + 1);
+        _;
+    }
+
+    //tests
 
     function testInitializesInOpenState() public view {
         assert(lottery.getLotteryState() == Lottery.LotteryState.OPEN);
@@ -79,10 +98,6 @@ contract LotteryTest is Test {
         lottery.buyTicket{value: entranceFee}();
     }
 
-    //time passed
-    //has players
-    //open state
-    //has balance
     function testCheckUpkeepFalseIfHasNoBalance() public {
         vm.warp(block.timestamp + interval + 1);
         (bool upkeepNeeded, ) = lottery.checkUpKeep("");
@@ -97,11 +112,59 @@ contract LotteryTest is Test {
         assert(!upkeepNeeded);
     }
 
-    function testCheckUpkeepAllParamsAreTrue() public {
-        vm.prank(PLAYER);
-        lottery.buyTicket{value: entranceFee}();
-        vm.warp(block.timestamp + interval + 1);
+    function testCheckUpkeepAllParamsAreTrue()
+        public
+        setAllCheckUpkeepParamsToTrue
+    {
         (bool upkeepNeeded, ) = lottery.checkUpKeep("");
         assert(upkeepNeeded);
+    }
+
+    /**
+     * @dev there is no vm.expectNotRevert !
+     * -> if the function does not revert,
+     * the test is considered passed
+     */
+    function testPerformUpkeepRunsWhenCheckUpkeepIsTrue()
+        public
+        setAllCheckUpkeepParamsToTrue
+    {
+        lottery.performUpkeep();
+    }
+
+    function testPerformupkeepRevertsIfCheckUpkeepIsFalse() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Lottery.Lottery__UpkeepNotNeeded__error.selector,
+                0,
+                0,
+                0
+            )
+        );
+        lottery.performUpkeep();
+    }
+
+    function testPerformUpkeepAndEmitsRequestId()
+        public
+        setAllCheckUpkeepParamsToTrue
+    {
+        vm.recordLogs();
+        lottery.performUpkeep();
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 requestId = entries[1].topics[1];
+        assert(uint256(requestId) > 0);
+    }
+
+    /** Fuzzing testma
+     * @dev forgeGeneratedRandomNumber
+     */
+    function testFullfillRandomWordsCalledAfterPerformUpkeep(
+        uint32 forgeGeneratedRandomNumber
+    ) public setAllCheckUpkeepParamsToTrue {
+        vm.expectRevert("nonexistent request");
+        VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(
+            forgeGeneratedRandomNumber,
+            address(lottery)
+        );
     }
 }

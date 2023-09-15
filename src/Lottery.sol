@@ -20,13 +20,12 @@ contract Lottery is VRFConsumerBaseV2 {
     error Lottery__UpkeepNotNeeded__error(
         uint256 balance,
         uint256 numPlayers,
-        uint256 timePassed,
         uint256 lotteryState
     );
 
     enum LotteryState {
-        OPEN,
-        CLOSE
+        OPEN, //0
+        CLOSE //1
     }
 
     uint16 private REQUEST_CONFIRMATIONS = 2;
@@ -46,6 +45,7 @@ contract Lottery is VRFConsumerBaseV2 {
 
     event Lottery__PlayerAccepted__event(address indexed player);
     event Lottery__LotteryReset__event();
+    event Lottery__WinnerRequested__event(uint256 indexed requestId);
     event Lottery__WinnerChosen__event(address indexed winner);
 
     constructor(
@@ -83,22 +83,22 @@ contract Lottery is VRFConsumerBaseV2 {
             revert Lottery__UpkeepNotNeeded__error(
                 address(this).balance,
                 s_players.length,
-                (block.timestamp - s_lastTimestampSnapshot),
                 uint256(s_currentLotteryState)
             );
         }
         s_currentLotteryState = LotteryState.CLOSE;
-        i_VRFCoordinator.requestRandomWords(
+        uint256 requestId = i_VRFCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
             REQUEST_CONFIRMATIONS,
             i_callbackGasLimit,
             NUM_WORDS
         );
+        emit Lottery__WinnerRequested__event(requestId);
     }
 
     /**
-     * @dev Chainlink node will call this function to give back the randomWords
+     * @dev Chainlink node (VRF coordinator) will call this function to give back the randomWords
      */
     function fulfillRandomWords(
         uint256 requestId,
