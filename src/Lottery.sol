@@ -77,7 +77,7 @@ contract Lottery is VRFConsumerBaseV2 {
         emit Lottery__PlayerAccepted__event(msg.sender);
     }
 
-    function performUpkeep() external {
+    function performUpkeep(bytes calldata /*performData*/) external {
         (bool upkeepNeeded, ) = checkUpKeep("");
         if (!upkeepNeeded) {
             revert Lottery__UpkeepNotNeeded__error(

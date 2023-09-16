@@ -9,7 +9,6 @@ contract LotteryDeploy is Script {
     function run() external returns (Lottery, HelperConfig) {
         HelperConfig helperConfig = new HelperConfig();
         AddConsumer addConsumer = new AddConsumer();
-
         (
             uint256 entranceFee,
             uint256 interval,
@@ -43,15 +42,16 @@ contract LotteryDeploy is Script {
             subscriptionId,
             callbackGasLimit
         );
-        vm.stopBroadcast();
 
-        //broadcast alread present
+        vm.stopBroadcast();
+        //broadcast already present
         addConsumer.addConsumer(
             address(lottery),
             subscriptionId,
             vrfCoordinator,
             deployerKey
         );
+
         return (lottery, helperConfig);
     }
 }

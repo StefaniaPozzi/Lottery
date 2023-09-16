@@ -94,6 +94,10 @@ contract AddConsumer is Script {
         address vrfCoordinator,
         uint256 deployerKey
     ) public {
+        console.log("Adding consumer contract: ", lottery);
+        console.log("Using vrfCoordinator: ", vrfCoordinator);
+        console.log("On ChainID: ", block.chainid);
+        console.log(deployerKey);
         vm.startBroadcast(deployerKey);
         VRFCoordinatorV2Mock(vrfCoordinator).addConsumer(
             subscriptionId,

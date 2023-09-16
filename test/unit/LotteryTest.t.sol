@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.18;
 
-import {LotteryDeploy} from "../../script/LotteryDeploy.sol";
+import {LotteryDeploy} from "../../script/LotteryDeploy.s.sol";
 import {Lottery} from "../../src/Lottery.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
@@ -23,7 +23,7 @@ contract LotteryTest is Test {
     uint256 deployerKey;
 
     address public PLAYER = makeAddr("player");
-    uint256 public constant STARTING_USER_BALANCE = 10 ether;
+    uint256 public constant STARTING_USER_BALANCE = 1 ether;
     event Lottery__PlayerAccepted__event(address indexed player);
     event Lottery__LotteryReset__event();
     event Lottery__WinnerChosen__event(address indexed winner);
@@ -57,6 +57,14 @@ contract LotteryTest is Test {
         vm.prank(PLAYER);
         lottery.buyTicket{value: entranceFee}();
         vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        _;
+    }
+
+    modifier onlyLocally() {
+        if (block.chainid != 31337) {
+            return;
+        }
         _;
     }
 
@@ -92,7 +100,7 @@ contract LotteryTest is Test {
         vm.prank(PLAYER);
         lottery.buyTicket{value: entranceFee}();
         vm.warp(block.timestamp + interval + 1);
-        lottery.performUpkeep();
+        lottery.performUpkeep("");
         vm.expectRevert(Lottery.Lottery__ClosedState__error.selector);
         vm.prank(PLAYER);
         lottery.buyTicket{value: entranceFee}();
@@ -129,7 +137,7 @@ contract LotteryTest is Test {
         public
         setAllCheckUpkeepParamsToTrue
     {
-        lottery.performUpkeep();
+        lottery.performUpkeep("");
     }
 
     function testPerformupkeepRevertsIfCheckUpkeepIsFalse() public {
@@ -141,7 +149,7 @@ contract LotteryTest is Test {
                 0
             )
         );
-        lottery.performUpkeep();
+        lottery.performUpkeep("");
     }
 
     function testPerformUpkeepAndEmitsRequestId()
@@ -149,7 +157,7 @@ contract LotteryTest is Test {
         setAllCheckUpkeepParamsToTrue
     {
         vm.recordLogs();
-        lottery.performUpkeep();
+        lottery.performUpkeep("");
         Vm.Log[] memory entries = vm.getRecordedLogs();
         bytes32 requestId = entries[1].topics[1];
         assert(uint256(requestId) > 0);
@@ -160,11 +168,44 @@ contract LotteryTest is Test {
      */
     function testFullfillRandomWordsCalledAfterPerformUpkeep(
         uint32 forgeGeneratedRandomNumber
-    ) public setAllCheckUpkeepParamsToTrue {
+    ) public setAllCheckUpkeepParamsToTrue onlyLocally {
         vm.expectRevert("nonexistent request");
+        //simulation: no real VRF on local chain
         VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(
             forgeGeneratedRandomNumber,
             address(lottery)
+        );
+    }
+
+    function testFulfillRandomWordsPicksAWinnerAndSendsBalance()
+        public
+        setAllCheckUpkeepParamsToTrue
+        onlyLocally
+    {
+        uint256 numberOfPlayers = 3;
+        uint256 startIndex = 1;
+        uint256 prize = (numberOfPlayers + 1) * entranceFee;
+
+        for (uint256 i = 1; i < numberOfPlayers + startIndex; i++) {
+            address addressPlayer = address(uint160(i));
+            hoax(addressPlayer, STARTING_USER_BALANCE);
+            lottery.buyTicket{value: entranceFee}();
+        }
+
+        vm.recordLogs();
+        lottery.performUpkeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 requestId = entries[1].topics[1];
+
+        VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(
+            uint256(requestId),
+            address(lottery)
+        );
+
+        assert(lottery.getLastWinner() != address(0));
+        assert(
+            lottery.getLastWinner().balance ==
+                STARTING_USER_BALANCE + prize - entranceFee
         );
     }
 }
