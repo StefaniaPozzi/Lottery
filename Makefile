@@ -17,3 +17,6 @@ install :; forge install Cyfrin/foundry-devops@0.0.11 --no-commit && forge insta
 
 deploy:
 	forge script script/LotteryDeploy.s.sol:LotteryDeploy --rpc-url $(RPC_URL_SEPOLIA_ALCHEMY) --private-key $(PRIVATE_KEY_METAMASK) --broadcast --verify --etherscan-api-key $(API_KEY_ETHERSCAN) -vvvv
+
+debug:
+	forge test --debug testInitializesInOpenState
